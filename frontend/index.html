@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0F9D7A" />
+  <title>MacroVision AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- ================= AUTH ================= -->
+  <section class="auth" id="authView" hidden>
+    <div class="auth-hero">
+      <div class="logo big"><span>MV</span></div>
+      <h1>MacroVision <em>AI</em></h1>
+      <p>Snap your meal. Get instant calories, protein, carbs &amp; fat, plus weekly insights that help you eat better.</p>
+      <ul class="feature-list">
+        <li>📸 AI food recognition from a single photo</li>
+        <li>⚖️ Portion &amp; macro estimation</li>
+        <li>📊 Daily dashboard, weekly &amp; monthly reports</li>
+        <li>💡 Personalised suggestions</li>
+      </ul>
+    </div>
+    <div class="auth-card card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-auth="login" type="button">Log in</button>
+        <button class="tab" data-auth="signup" type="button">Sign up</button>
+      </div>
+      <form id="authForm" novalidate>
+        <label class="field" id="nameField" hidden>Name
+          <input name="name" autocomplete="name" placeholder="Your name" />
+        </label>
+        <label class="field">Email
+          <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+        </label>
+        <label class="field">Password
+          <input name="password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required />
+        </label>
+        <p class="form-error" id="authError" hidden></p>
+        <button class="btn primary block" id="authSubmit" type="submit">Log in</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= APP ================= -->
+  <div class="app" id="appView" hidden>
+    <aside class="sidebar">
+      <div class="brand"><div class="logo"><span>MV</span></div><div><strong>MacroVision</strong><small>AI nutrition</small></div></div>
+      <nav class="nav" id="nav">
+        <a href="#/dashboard" data-view="dashboard"><span>🏠</span>Dashboard</a>
+        <a href="#/scan" data-view="scan"><span>📸</span>Scan meal</a>
+        <a href="#/history" data-view="history"><span>🍽️</span>Meal log</a>
+        <a href="#/reports" data-view="reports"><span>📊</span>Reports</a>
+        <a href="#/profile" data-view="profile"><span>🎯</span>Goals</a>
+      </nav>
+      <div class="sidebar-foot">
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle dark mode">🌙</button>
+        <button class="btn ghost small" id="logoutBtn" type="button">Log out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="muted small" id="greetDate"></p>
+          <h2 id="greeting">Hello!</h2>
+        </div>
+        <a class="btn primary" href="#/scan">📸 <span class="hide-sm">Scan a meal</span></a>
+      </header>
+      <div class="banner warn" id="aiBanner" hidden></div>
+
+      <!-- Dashboard -->
+      <section class="view" id="view-dashboard" hidden>
+        <div class="grid dash-top">
+          <div class="card ring-card">
+            <h3>Today's calories</h3>
+            <div class="ring-wrap">
+              <svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="calRing"/></svg>
+              <div class="ring-center"><strong id="calEaten">0</strong><span id="calTarget">of 0 kcal</span></div>
+            </div>
+            <p class="ring-note" id="calLeft"></p>
+          </div>
+          <div class="card">
+            <h3>Macros today</h3>
+            <div class="macro-bars" id="macroBars"></div>
+          </div>
+          <div class="card stat-stack">
+            <div class="stat"><span>🔥</span><div><strong id="streak">0</strong><small>day streak</small></div></div>
+            <div class="stat"><span>🍽️</span><div><strong id="mealsToday">0</strong><small>meals today</small></div></div>
+            <div class="stat"><span>💧</span><div><strong id="fiberToday">0 g</strong><small>fibre today</small></div></div>
+          </div>
+        </div>
+        <div class="grid two">
+          <div class="card"><h3>Last 7 days</h3><div class="chart-box"><canvas id="weekChart"></canvas></div></div>
+          <div class="card"><h3>Calories by macro (today)</h3><div class="chart-box"><canvas id="splitChart"></canvas></div><p class="muted small center" id="splitEmpty" hidden>No meals logged today yet.</p></div>
+        </div>
+        <div class="grid two">
+          <div class="card"><div class="card-head"><h3>Today's meals</h3><a href="#/history" class="link">See all</a></div><div id="todayMeals" class="meal-list"></div></div>
+          <div class="card"><div class="card-head"><h3>Suggestions for you</h3><a href="#/reports" class="link">Full report</a></div><div id="dashTips" class="tips"></div></div>
+        </div>
+      </section>
+
+      <!-- Scan -->
+      <section class="view" id="view-scan" hidden>
+        <div class="grid two scan-grid">
+          <div class="card">
+            <h3>1. Upload a meal photo</h3>
+            <label class="dropzone" id="dropzone">
+              <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" capture="environment" hidden />
+              <img id="photoPreview" alt="Meal preview" hidden />
+              <div class="dz-empty" id="dzEmpty">
+                <div class="dz-icon">📷</div>
+                <strong>Tap to take or choose a photo</strong>
+                <small>or drag &amp; drop · JPG, PNG, WEBP up to 10 MB</small>
+              </div>
+            </label>
+            <button class="btn primary block" id="analyzeBtn" type="button" disabled>✨ Analyse with AI</button>
+            <p class="muted small center">Tip: shoot from above in good light, with the whole plate visible.</p>
+          </div>
+          <div class="card" id="resultCard">
+            <h3>2. Review &amp; save</h3>
+            <div id="resultEmpty" class="empty"><div class="big-emoji">🥗</div><p>Your AI nutrition breakdown will appear here.</p></div>
+            <div id="analyzing" class="empty" hidden><div class="spinner"></div><p>Recognising foods &amp; estimating portions…</p></div>
+            <div id="resultBody" hidden>
+              <div class="result-head"><h4 id="mealName"></h4><span class="pill" id="sourcePill"></span></div>
+              <div class="totals" id="resultTotals"></div>
+              <p class="muted small">Adjust grams if the portion looks off; nutrients update automatically.</p>
+              <div class="items" id="resultItems"></div>
+              <div class="notes" id="healthNotes"></div>
+              <div class="save-row">
+                <label class="field inline">Meal
+                  <select id="mealType"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack">Snack</option></select>
+                </label>
+                <label class="field inline">When
+                  <input type="datetime-local" id="eatenAt" />
+                </label>
+              </div>
+              <label class="field">Note (optional)<input id="mealNote" maxlength="300" placeholder="e.g. homemade, extra ghee" /></label>
+              <button class="btn primary block" id="saveMealBtn" type="button">✅ Save to my log</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- History -->
+      <section class="view" id="view-history" hidden>
+        <div class="card">
+          <div class="card-head">
+            <h3>Meal log</h3>
+            <select id="historyRange"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
+          </div>
+          <div id="historyList" class="history"></div>
+        </div>
+      </section>
+
+      <!-- Reports -->
+      <section class="view" id="view-reports" hidden>
+        <div class="report-bar card">
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-period="week" type="button">Weekly</button>
+            <button class="tab" data-period="month" type="button">Monthly</button>
+          </div>
+          <div class="period-nav">
+            <button class="icon-btn" id="prevPeriod" type="button" aria-label="Previous period">‹</button>
+            <strong id="reportTitle">…</strong>
+            <button class="icon-btn" id="nextPeriod" type="button" aria-label="Next period">›</button>
+          </div>
+          <button class="btn ghost small" id="printBtn" type="button">🖨️ Print / PDF</button>
+        </div>
+        <div class="grid four" id="reportKpis"></div>
+        <div class="grid two">
+          <div class="card"><h3>Daily calories vs target</h3><div class="chart-box tall"><canvas id="reportCalChart"></canvas></div></div>
+          <div class="card"><h3>Daily macros (g)</h3><div class="chart-box tall"><canvas id="reportMacroChart"></canvas></div></div>
+        </div>
+        <div class="grid three">
+          <div class="card"><h3>Average vs target</h3><div id="avgTable" class="avg-table"></div></div>
+          <div class="card"><h3>Top foods</h3><div id="topFoods" class="top-foods"></div></div>
+          <div class="card"><h3>Meals logged</h3><div class="chart-box"><canvas id="mealTypeChart"></canvas></div></div>
+        </div>
+        <div class="grid two">
+          <div class="card"><h3>💡 Suggestions</h3><div id="reportTips" class="tips"></div></div>
+          <div class="card coach">
+            <div class="card-head"><h3>🤖 AI nutrition coach</h3><button class="btn primary small" id="coachBtn" type="button">Get AI insights</button></div>
+            <div id="coachBody" class="muted">Get a personalised review of this period from Claude, based on your logged meals and goals.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profile -->
+      <section class="view" id="view-profile" hidden>
+        <div class="grid two">
+          <form class="card" id="profileForm">
+            <h3>Your profile &amp; goal</h3>
+            <div class="form-grid">
+              <label class="field">Sex<select name="sex"><option value="female">Female</option><option value="male">Male</option></select></label>
+              <label class="field">Age<input name="age" type="number" min="10" max="100" required /></label>
+              <label class="field">Height (cm)<input name="height_cm" type="number" min="100" max="250" step="0.5" required /></label>
+              <label class="field">Weight (kg)<input name="weight_kg" type="number" min="25" max="300" step="0.1" required /></label>
+              <label class="field">Activity<select name="activity_level">
+                <option value="sedentary">Sedentary (desk, little exercise)</option><option value="light">Light (1–3 workouts/week)</option>
+                <option value="moderate">Moderate (3–5 workouts/week)</option><option value="active">Active (6–7 workouts/week)</option>
+                <option value="very_active">Very active (athlete / physical job)</option></select></label>
+              <label class="field">Goal<select name="goal"><option value="lose">Lose weight</option><option value="maintain">Maintain</option><option value="gain">Gain muscle / weight</option></select></label>
+              <label class="field span2">Diet<select name="diet_type"><option value="any">No preference</option><option value="vegetarian">Vegetarian</option><option value="eggetarian">Eggetarian</option><option value="vegan">Vegan</option><option value="non_vegetarian">Non-vegetarian</option></select></label>
+            </div>
+            <p class="form-error" id="profileError" hidden></p>
+            <button class="btn primary block" type="submit">Save &amp; recalculate targets</button>
+          </form>
+          <div class="card">
+            <h3>Your daily targets</h3>
+            <div id="targetsView" class="targets"></div>
+            <p class="muted small">Calculated with the Mifflin-St Jeor equation × your activity level, adjusted for your goal. This is general guidance, not medical advice.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Mobile bottom navigation -->
+    <nav class="bottom-nav" id="bottomNav">
+      <a href="#/dashboard" data-view="dashboard"><span>🏠</span>Home</a>
+      <a href="#/history" data-view="history"><span>🍽️</span>Log</a>
+      <a href="#/scan" data-view="scan" class="scan-fab"><span>📸</span></a>
+      <a href="#/reports" data-view="reports"><span>📊</span>Reports</a>
+      <a href="#/profile" data-view="profile"><span>🎯</span>Goals</a>
+    </nav>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
